@@ -1,0 +1,26 @@
+{
+	"Source Field": "Front",
+	"Delimiter": " ",
+	"Search Queries": [
+		{
+			"Name": "Sentence",
+			"Field": ""
+		},
+		{
+			"Name": "Sentence With Furigana",
+			"Field": ""
+		},
+		{
+			"Name": "Image",
+			"Field": ""
+		},
+		{
+			"Name": "Audio",
+			"Field": ""
+		},
+		{
+			"Name": "English Translation",
+			"Field": ""
+		}
+	]
+}
