@@ -31,8 +31,11 @@ def download_file(url, folder, file_extension):
         return None
 
 
-def api_lookup(keyword, min_length=12):
-    url = f"https://api.immersionkit.com/look_up_dictionary?keyword={keyword}&sort=shortness&min_length={min_length}"
+def api_lookup(keyword, min_length=12, selected_exact=False):
+    if selected_exact:
+        url = f"https://api.immersionkit.com/look_up_dictionary?keyword=「{keyword}」&sort=shortness&min_length={min_length}"
+    else:
+        url = f"https://api.immersionkit.com/look_up_dictionary?keyword={keyword}&sort=shortness&min_length={min_length}"
     response = requests.get(url)
     if response.status_code == 200:
         data = response.json()
@@ -42,6 +45,7 @@ def api_lookup(keyword, min_length=12):
                 "sentence": example["sentence"],
                 "sentence_with_furigana": example["sentence_with_furigana"],
                 "translation": example["translation"],
+                "deck_name": example["deck_name"],
                 "audioURL": f"https://api.immersionkit.com/download_sentence_audio?id={example['id']}",
                 "imageURL": f"https://api.immersionkit.com/download_sentence_image?id={example['id']}"
             }
@@ -73,12 +77,25 @@ def immersionKit(browser, ids):
 
     field_values = {}
 
-    for i, sq in enumerate(config["Search Queries"], 1):
-        name = sq["Name"]
-        fld = sq["Field"]
+    frm.exactSearchCheckBox.setChecked(config.get("ExactSearch", False))
+    frm.highlightingCheckBox.setChecked(config.get("Highlighting", False))
+
+    
+    addon_folder = os.path.dirname(__file__)
+    fields_path = os.path.join(addon_folder, 'fields.json')
+
+    with open(fields_path, 'r') as file:
+        fields_data = json.load(file)
+
+    for i in range(len(fields_data["Search Queries"])):
+        name = fields_data["Search Queries"][i]["Name"]
+        try:
+            fld = config["Search Queries"][i]["Field"]
+        except:
+            fld = ""
 
         lineEdit = QLineEdit(name)
-        frm.gridLayout.addWidget(lineEdit, i, 0)
+        frm.gridLayout.addWidget(lineEdit, i+1, 0)
 
         combobox = QComboBox()
         combobox.setObjectName("targetField")
@@ -86,7 +103,7 @@ def immersionKit(browser, ids):
         combobox.addItems(fields)
         if fld in fields:
             combobox.setCurrentIndex(fields.index(fld) + 1)
-        frm.gridLayout.addWidget(combobox, i, 1)
+        frm.gridLayout.addWidget(combobox, i+1, 1)
 
         field_values[name] = combobox
 
@@ -102,12 +119,16 @@ def immersionKit(browser, ids):
             "Source Field": frm.srcField.currentText(),
             "Delimiter": config["Delimiter"],
             "Search Queries": [{"Name": name, "Field": combobox.currentText()} for name, combobox in field_values.items()],
-            "MinURLLength": frm.minLengthField.value()
+            "MinURLLength": frm.minLengthField.value(),
+            "ExactSearch": frm.exactSearchCheckBox.isChecked(), 
+            "Highlighting": frm.highlightingCheckBox.isChecked()
         }
         mw.addonManager.writeConfig(__name__, meta_data)
 
         selected_source_field = frm.srcField.currentText()
         selected_min_field = frm.minLengthField.value()
+        selected_exact = frm.exactSearchCheckBox.isChecked()
+        selected_highlighting = frm.highlightingCheckBox.isChecked()
     else:
         return
 
@@ -115,7 +136,7 @@ def immersionKit(browser, ids):
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = []
         for nid in ids:
-            futures.append(executor.submit(process_note, nid, field_values, selected_source_field, selected_min_field))
+            futures.append(executor.submit(process_note, nid, field_values, selected_source_field, selected_min_field, selected_exact, selected_highlighting))
 
         for future in concurrent.futures.as_completed(futures):
             try:
@@ -126,16 +147,17 @@ def immersionKit(browser, ids):
     showInfo("Done Updating!")
 
 
-def process_note(nid, field_values, selected_source_field, selected_min_field):
+def process_note(nid, field_values, selected_source_field, selected_min_field, selected_exact, selected_highlighting):
     note = mw.col.getNote(nid)
     keyword = note[selected_source_field]
-    api_response = api_lookup(keyword, selected_min_field)
+    api_response = api_lookup(keyword, selected_min_field, selected_exact)
     if "error" not in api_response:
-        sentence = fix_sentence(api_response["sentence"], keyword, False)
-        sentence_with_furigana = fix_sentence(api_response["sentence_with_furigana"], keyword, True)
+        sentence = fix_sentence(api_response["sentence"], keyword, False, selected_highlighting)
+        sentence_with_furigana = fix_sentence(api_response["sentence_with_furigana"], keyword, True, selected_highlighting)
         translation = api_response["translation"]
         audio_url = api_response["audioURL"]
         image_url = api_response["imageURL"]
+        source = api_response["deck_name"]
 
         audio_path = download_file(audio_url, mw.col.media.dir(), "mp3")
         if audio_path and field_values["Audio"].currentText() != "<ignored>":
@@ -151,17 +173,20 @@ def process_note(nid, field_values, selected_source_field, selected_min_field):
             note[field_values["Sentence With Furigana"].currentText()] = sentence_with_furigana
         if field_values["English Translation"].currentText() != "<ignored>":
             note[field_values["English Translation"].currentText()] = translation
+        if field_values["Source Media"].currentText() != "<ignored>":
+            note[field_values["Source Media"].currentText()] = source
         note.flush()
 
 
-def fix_sentence(sentence, keyword, setting):
+def fix_sentence(sentence, keyword, setting, selected_highlighting):
     sentence = re.sub(r'[　→]', '', sentence)
-    keyword_pattern = re.escape(keyword)
-    keyword_with_reading_pattern = rf'{keyword_pattern}\[(.*?)\]'
-    if setting:
-        sentence = re.sub(keyword_with_reading_pattern, r'<b>\g<0></b>', sentence)
-    else:
-        sentence = re.sub(keyword_pattern, f'<b>{keyword}</b>', sentence)
+    if selected_highlighting:
+        keyword_pattern = re.escape(keyword)
+        keyword_with_reading_pattern = rf'{keyword_pattern}\[(.*?)\]'
+        if setting:
+            sentence = re.sub(keyword_with_reading_pattern, r'<b>\g<0></b>', sentence)
+        else:
+            sentence = re.sub(keyword_pattern, f'<b>{keyword}</b>', sentence)
     return sentence
 
 

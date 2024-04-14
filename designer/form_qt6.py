@@ -8,6 +8,7 @@ class Ui_Dialog(object):
         self.verticalLayout = QtWidgets.QVBoxLayout(Dialog)
         self.verticalLayout.setObjectName("verticalLayout")
 
+
         # Horizontal layout for source field and min length
         self.horizontalLayout_1 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_1.setObjectName("horizontalLayout_1")
@@ -36,6 +37,21 @@ class Ui_Dialog(object):
         # Add the horizontal layout to the main vertical layout
         self.verticalLayout.addLayout(self.horizontalLayout_1)
 
+        self.horizontalLayout_check = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_check.setObjectName("horizontalLayout_check")
+
+        self.exactSearchCheckBox = QtWidgets.QCheckBox(parent=Dialog)
+        self.exactSearchCheckBox.setObjectName("exactSearchCheckBox")
+        self.exactSearchCheckBox.setText("Exact Search")
+        self.horizontalLayout_check.addWidget(self.exactSearchCheckBox)
+
+        self.highlightingCheckBox = QtWidgets.QCheckBox(parent=Dialog)
+        self.highlightingCheckBox.setObjectName("highlightingCheckBox")
+        self.highlightingCheckBox.setText("Sentence Highlighting")
+        self.horizontalLayout_check.addWidget(self.highlightingCheckBox)
+
+        self.verticalLayout.addLayout(self.horizontalLayout_check)
+
         # Add line
         self.line = QtWidgets.QFrame(parent=Dialog)
         self.line.setFrameShape(QtWidgets.QFrame.Shape.HLine)
@@ -47,6 +63,7 @@ class Ui_Dialog(object):
         self.gridLayout.setObjectName("gridLayout")
         
         self.verticalLayout.addLayout(self.gridLayout)
+        
         
         self.line_2 = QtWidgets.QFrame(parent=Dialog)
         self.line_2.setFrameShape(QtWidgets.QFrame.Shape.HLine)
