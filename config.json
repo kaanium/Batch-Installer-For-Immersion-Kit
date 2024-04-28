@@ -25,6 +25,14 @@
 		{
 			"Name": "Source Media",
 			"Field": ""
+		},
+		{
+			"Name": "Previous Sentence",
+			"Field": ""
+		},
+		{
+			"Name": "Next Sentence",
+			"Field": ""
 		}
 	]
 }

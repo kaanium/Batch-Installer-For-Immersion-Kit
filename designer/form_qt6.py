@@ -50,6 +50,16 @@ class Ui_Dialog(object):
         self.highlightingCheckBox.setText("Sentence Highlighting")
         self.horizontalLayout_check.addWidget(self.highlightingCheckBox)
 
+        self.sourceMediaTagCheckBox = QtWidgets.QCheckBox(parent=Dialog)
+        self.sourceMediaTagCheckBox.setObjectName("sourceMediaTagCheckBox")
+        self.sourceMediaTagCheckBox.setText("Tag With Source Media")
+        self.horizontalLayout_check.addWidget(self.sourceMediaTagCheckBox)
+
+        self.mergeCheckbox = QtWidgets.QCheckBox(parent=Dialog)
+        self.mergeCheckbox.setObjectName("mergeCheckbox")
+        self.mergeCheckbox.setText("Merge with prev and next sentence")
+        self.horizontalLayout_check.addWidget(self.mergeCheckbox)
+
         self.verticalLayout.addLayout(self.horizontalLayout_check)
 
         # Add line
